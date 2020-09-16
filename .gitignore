@@ -1,0 +1,4 @@
+.projectile
+.ocamlformat
+_build
+.merlin

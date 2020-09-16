@@ -1,0 +1,4 @@
+(library
+  (name mrdt)
+  (public_name mrdt)
+  (libraries irmin))
