@@ -1,4 +1,4 @@
 (library
   (name mrdt)
   (public_name mrdt)
-  (libraries irmin))
+  (libraries irmin scylla))
