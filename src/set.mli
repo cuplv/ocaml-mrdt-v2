@@ -33,21 +33,4 @@ module type SET = sig
 end
 
 module Make (Ord : OrdElt) (Replica : S.REPLICA) : SET
-  with type elt = Ord.t = struct
-  type elt = Ord.t
-
-  (* irmin type representation of values *)
-  let _elt = Ord.t
-
-  let empty _ = ()
-
-  let is_empty () = false
-
-  let mem _ = false
-
-  let add _ = ()
-
-  let remove _ = ()
-
-  let sync _ _ = ()
-end
+  with type elt = Ord.t

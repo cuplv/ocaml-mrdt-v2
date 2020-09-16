@@ -10,20 +10,17 @@ module type STORE = sig
   val init : elt -> unit
   (** Initialize the store with a value v *)
 
-  (*
-  val latest : 'a Irmin.Type.ty -> (Vclock.t * Int64.t * 'a)
-  (** [latest ('a ty)] returns a value as [(vclock, version, 'a)] *)
+  val mem : Vclock.t -> string -> bool
+  (** [mem vec key] is true iff [vec key] present in store *)
 
-  *)
   val add : Vclock.t -> elt -> ?actor2:int -> unit -> string
   (** [add vec ver val] adds [val] to the store *)
 
   val find : Vclock.t -> string -> elt option
+  (** [find vec key] returns [Some val] if value exists or [None] *)
 
-  (*
-  val mem : Vclock.t -> string -> bool
-  (** [mem vec val] checks if [val] with [vec] version exists in store *)
-   *)
+  val latest: unit -> (Vclock.t * string)
+  (** [latest ()] returns the latest version for the replica *)
 end
 
 (** Implementaion of versioned store *)
@@ -68,13 +65,26 @@ module Make (Replica : S.REPLICA) (Type : S.TYPE): STORE with type elt = Type.t 
   let select_value_query = Printf.sprintf
     "select value from mrdt.%s_value where key = ?" Replica.variable_id
 
+  let select_latest_query1 = Printf.sprintf
+    "select vec, key, ver from mrdt.%s_meta where actor1 = %d and ver > -1 allow filtering" Replica.variable_id Replica.replica_id
+
+  let select_latest_query2 = Printf.sprintf
+    "select vec, key, ver from mrdt.%s_meta where actor2 = %d and ver > -1 allow filtering" Replica.variable_id Replica.replica_id
+
+  let select_root_query = Printf.sprintf
+    "select vec, key, ver from mrdt.%s_meta where actor1 = -1 and actor2 = -1 allow filtering" Replica.variable_id
+
   let to_bin_string = Irmin.Type.to_bin_string
 
   let of_bin_string = Irmin.Type.of_bin_string
 
+  let get_blob = function Blob b -> b | _ -> failwith "error"
+
   let get_value v =
     let v = (function Blob b -> b | _ -> failwith "error") v in
     Bigstringaf.to_string v
+
+  let get_int64 = function Bigint i -> i | _ -> failwith "error"
 
   let init_val v =
     let rep = to_bin_string Type.t v in
@@ -108,12 +118,19 @@ module Make (Replica : S.REPLICA) (Type : S.TYPE): STORE with type elt = Type.t 
     (* create the tables *)
     let _ = query conn ~query:create_meta_query () |> get_ok in
     let _ = query conn ~query:create_value_query () |> get_ok in
-    let (key, vec, actor1, actor2, ver, value) = init_val v in
+    let (key, vec, _, actor2, ver, value) = init_val v in
+    let actor1 = Int (-1l) in
     let _ = query conn ~query:insert_meta_query
       ~values:[|vec ; key ; actor1 ; actor2 ; ver |] () |> get_ok in
     let _ = query conn ~query:insert_value_query
       ~values:[|key ; value |] () |> get_ok in
     ()
+
+  let mem vec _key =
+    let vec = Blob vec in
+    let res = (query conn ~query:select_meta_query
+      ~values:[| vec |] () |> Result.get_ok).values in
+    Array.length res > 0
 
   let add vec value ?actor2:(actor2 : int option) () =
     let (key, hash, value) = make_key_value value in
@@ -140,4 +157,26 @@ module Make (Replica : S.REPLICA) (Type : S.TYPE): STORE with type elt = Type.t 
       let value = of_bin_string Type.t value |> Result.get_ok in
       Some value
     end
+
+  let latest _ =
+    let values1 = (query conn ~query:select_latest_query1 () |> Result.get_ok).values in
+    let values2 = (query conn ~query:select_latest_query2 () |> Result.get_ok).values in
+    let values = Array.concat [values1 ; values2] in
+    let values = if (Array.length values) = 0 then
+      (query conn ~query:select_root_query () |> Result.get_ok).values
+      else values
+    in
+    let values = Array.map (fun i -> (get_blob i.(0) , get_value i.(1) , get_int64 i.(2))) values in
+    let max_ver = ref (-1L) in
+    let max_ind = ref (-1) in
+    for i = 0 to (Array.length values) - 1 do
+      let (_, _, ver) = values.(i) in
+      if (ver > !max_ver) then begin
+        max_ver := ver;
+        max_ind := i
+      end else
+        ()
+    done;
+    let (vec, key, _) = values.(!max_ind) in
+    (vec, key)
 end
