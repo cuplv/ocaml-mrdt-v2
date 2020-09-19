@@ -27,7 +27,7 @@ module type SET = sig
   (** [merge v i] performs a 3-way merge with version [v] at replica [i] updating the set *)
 
   val commit : t -> Vclock.t
-  (** [commit ()] exposes the data to the world *)
+  (** [commit t] exposes the data to the world *)
 
   val update : Vclock.t -> t -> unit
   (** [set v] sets the data version to v *)
