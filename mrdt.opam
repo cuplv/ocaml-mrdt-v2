@@ -10,6 +10,7 @@ bug-reports: "https://github.com/anmolsahoo25/mrdt/issues"
 depends: [
   "dune" {>= "2.7" & > "2.0.0"}
   "irmin" {> "2.0.0"}
+  "ppx_irmin" {> "2.0.0"}
   "odoc" {with-doc}
 ]
 build: [

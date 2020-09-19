@@ -6,10 +6,10 @@ type t = Bigstringaf.t
 val init : unit -> t
 (** Initialize a new vector clock *)
 
-val incr : int -> t -> unit
+val incr : int -> t -> t
 (** [incr i t] increments the counter at index i *)
 
-val merge : t -> t -> unit
+val merge : t -> t -> t
 (** [merge t1 t2] merges t1 and t2 to max of each index and updates both *)
 
 val compare : t -> t -> int

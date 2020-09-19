@@ -1,4 +1,5 @@
 (library
   (name mrdt)
   (public_name mrdt)
-  (libraries irmin scylla))
+  (libraries irmin ppx_irmin scylla)
+  (preprocess (pps ppx_irmin)))

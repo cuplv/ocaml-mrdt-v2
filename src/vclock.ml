@@ -1,7 +1,7 @@
 (* #TODO: hardcoded for 32 replicas (8 * 32) bytes *)
 open Bigstringaf
    
-let k = 32
+let k = 4
 
 let n = 8 * k
 
@@ -15,24 +15,27 @@ let init _ =
   v
 
 let incr i t =
+  let v = create n in
+  Bigstringaf.blit t ~src_off:0 v ~dst_off:0 ~len:(Bigstringaf.length t);
   if (i > k) then
     failwith "replica index greater than number of replicas"
   else begin
-    let v = get_int64_be t (i*8) in
-    let nv = Int64.add v 1L in
-    set_int64_be t (i*8) nv
-  end
+    let ni = Int64.add (get_int64_be t (i*8)) 1L in
+    set_int64_be v (i*8) ni
+  end;
+  v
 
 let merge t1 t2 =
+  let v = create n in
   for i = 0 to k - 1 do
     let v1 = get_int64_be t1 (i*8) in
     let v2 = get_int64_be t2 (i*8) in
     let nv = match (Int64.compare v1 v2) with
       | -1 -> v2
       | _ -> v1 in
-    set_int64_be t1 (i*8) nv;
-    set_int64_be t2 (i*8) nv;
-  done
+    set_int64_be v (i*8) nv;
+  done;
+  v
 
 let compare_at i t1 t2 =
   let open Int64 in

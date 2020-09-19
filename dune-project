@@ -14,4 +14,5 @@
   (synopsis "Mergeable replicated data types")
   (depends
     (dune (> 2.0.0))
-    (irmin (> 2.0.0))))
+    (irmin (> 2.0.0))
+    (ppx_irmin (> 2.0.0))))

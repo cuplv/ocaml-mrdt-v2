@@ -1,36 +1,40 @@
 (** Imperative mergeable sets.
     Operations destroy the previous version of the store *)
 
-module type OrdElt = sig
-  type t
-  (** Type of element to be in set *)
-
-  val t : 'a Irmin.Type.ty
-  (** Type representation of elements in the set *)
-end
-
 module type SET = sig
   type elt
   (** Type of elements in the set *)
 
-  val empty : unit -> unit
-  (** Empty the current set *)
+  type t
+  (** Type of mergeable set *)
 
-  val is_empty : unit -> bool
+  val init : int -> string -> Scylla.conn list -> t
+  (** [init i s] returns a new set with replica i and ID s *)
+
+  val is_empty : t -> bool
   (** Test if set is empty *)
 
-  val mem : elt -> bool
+  val mem : elt -> t -> bool
   (** [mem x] tests if [x] exists in the set *)
 
-  val add : elt -> unit
+  val add : elt -> t -> unit
   (** [add x s] adds [x] to the set *)
 
-  val remove : elt -> unit
+  val remove : elt -> t -> unit
   (** [remove x] removes [x] from the set *)
 
-  val sync : Vclock.t -> int -> unit
-  (** [sync v i] performs a 3-way merge with version [v] at replica [i] updating the set *)
+  val merge : Vclock.t -> int -> t -> Vclock.t
+  (** [merge v i] performs a 3-way merge with version [v] at replica [i] updating the set *)
+
+  val commit : t -> Vclock.t
+  (** [commit ()] exposes the data to the world *)
+
+  val update : Vclock.t -> t -> unit
+  (** [set v] sets the data version to v *)
+
+  val packet : t -> (Vclock.t * int * string)
+  (** [packet t] returns [(vector, replica, variable_id)] *)
 end
 
-module Make (Ord : OrdElt) (Replica : S.REPLICA) : SET
+module Make (Ord : S.ORDERED) : SET
   with type elt = Ord.t
