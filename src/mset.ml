@@ -20,8 +20,14 @@ module type SET = sig
   val add : elt -> t -> unit
   (** [add x s] adds [x] to the set *)
 
+  val min_elt : t -> elt
+  (** [min_elt t] finds the min_elt from set [t] *)
+
   val remove : elt -> t -> unit
   (** [remove x] removes [x] from the set *)
+
+  val iter : (elt -> unit) -> t -> unit
+  (** [iter f t] applies f to each element *)
 
   val merge : Vclock.t -> int -> t -> Vclock.t
   (** [merge v i] performs a 3-way merge with version [v] at replica [i] updating the set *)
@@ -69,6 +75,10 @@ struct
   let add x t = t.value <- Rbtree.add x t.value
 
   let remove x t = t.value <- Rbtree.remove x t.value
+
+  let min_elt t = Rbtree.min_elt t.value
+
+  let iter f t = Rbtree.iter f t.value
 
   let merge_vals v0 v1 v2 =
     let s1 = Rbtree.inter (Rbtree.inter v1 v2) v0 in

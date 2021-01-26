@@ -8,7 +8,6 @@ module type LIST = sig
   type t
   (** Type of mergeable list *)
 
-  (*
   val init : int -> string -> Scylla.conn list -> t
   (** [init i s] returns a new list with replica i and ID s *)
 
@@ -16,7 +15,10 @@ module type LIST = sig
   (** Adds an element to the head of the list *)
 
   val peek : t -> elt
-  (** Peek head element of lsit *)
+  (** Peek head element of list *)
+
+  val iter : (elt -> unit) -> t -> unit
+  (** [iter t f] will apply f to each element *)
 
   val merge : Vclock.t -> int -> t -> Vclock.t
   (** [merge v i] performs a 3-way merge with version [v] at replica [i] updating the set *)
@@ -29,7 +31,6 @@ module type LIST = sig
 
   val packet : t -> (Vclock.t * int * string)
   (** [packet t] returns [(vector, replica, variable_id)] *)
-  *)
 end
 
 module Make (Typ : S.TYPE) : LIST

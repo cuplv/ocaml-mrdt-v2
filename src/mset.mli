@@ -20,8 +20,14 @@ module type SET = sig
   val add : elt -> t -> unit
   (** [add x s] adds [x] to the set *)
 
+  val min_elt : t -> elt
+  (** [min_elt t] finds the min_elt from set [t] *)
+
   val remove : elt -> t -> unit
   (** [remove x] removes [x] from the set *)
+
+  val iter : (elt -> unit) -> t -> unit
+  (** [iter f t] applies f to each element *)
 
   val merge : Vclock.t -> int -> t -> Vclock.t
   (** [merge v i] performs a 3-way merge with version [v] at replica [i] updating the set *)
