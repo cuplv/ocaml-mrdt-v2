@@ -13,7 +13,7 @@ authors: ["Anmol Sahoo"]
 depends: [
   "scylla" {>= "0.0.1"}
   "dune" {>= "2.7" & > "2.0.0"}
-  "irmin" {> "2.0.0"}
+  "irmin" {= "2.0.0"}
   "ppx_irmin" {> "2.0.0"}
   "odoc" {with-doc}
 ]
