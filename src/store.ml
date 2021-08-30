@@ -79,9 +79,9 @@ module Make (Type : S.TYPE): STORE with type elt = Type.t = struct
   let select_root_query s = Printf.sprintf
     "select vec, key, ver from mrdt.%s_meta where actor1 = -1 and actor2 = -1 allow filtering" s
 
-  let to_bin_string = Irmin.Type.to_bin_string
+  let to_bin_string = Irmin.Type.unstage (Irmin.Type.to_bin_string Type.t)
 
-  let of_bin_string = Irmin.Type.of_bin_string
+  let of_bin_string = Irmin.Type.unstage (Irmin.Type.of_bin_string Type.t)
 
   let get_blob = function Blob b -> b | _ -> failwith "error"
 
@@ -92,7 +92,7 @@ module Make (Type : S.TYPE): STORE with type elt = Type.t = struct
   let get_int64 = function Bigint i -> i | _ -> failwith "error"
 
   let init_val v r =
-    let rep = to_bin_string Type.t v in
+    let rep = to_bin_string v in
     let bin = Bytes.of_string rep in
     let hash = Digest.bytes bin in
     let key = Blob (Bigstringaf.of_string hash ~off:0 ~len:(String.length hash)) in
@@ -106,7 +106,7 @@ module Make (Type : S.TYPE): STORE with type elt = Type.t = struct
     (key, vec, actor1, actor2, ver, value)
 
   let make_key_value v =
-    let rep = to_bin_string Type.t v in
+    let rep = to_bin_string v in
     let bin = Bytes.of_string rep in
     let hash = Digest.bytes bin in
     let key = Blob (Bigstringaf.of_string hash ~off:0 ~len:(String.length hash)) in
@@ -161,7 +161,7 @@ module Make (Type : S.TYPE): STORE with type elt = Type.t = struct
       let key = res.(0).(0) in
       let value = get_value (query conn ~query:(select_value_query t.variable_id)
         ~values:[|key|] () |> Result.get_ok).values.(0).(0) in
-      let value = of_bin_string Type.t value |> Result.get_ok in
+      let value = of_bin_string value |> Result.get_ok in
       Some value
     end
 
@@ -189,6 +189,6 @@ module Make (Type : S.TYPE): STORE with type elt = Type.t = struct
     done;
     let (vec, _key, _, kblob) = values.(!max_ind) in
     let value = get_value (query conn ~query:(select_value_query t.variable_id) ~values:[|kblob|] () |> Result.get_ok).values.(0).(0) in
-    let value = Irmin.Type.of_bin_string elt value |> Result.get_ok in
+    let value = of_bin_string value |> Result.get_ok in
     (vec, value)
 end
